@@ -75,9 +75,13 @@ class WritingApp extends HTMLElement {
     this.updateState('message', 'Generating Word document and sending...');
 
     try {
-      // 1. Generate Word Document using docx library (loaded via CDN in index.html or dynamically)
-      // For reliability, we'll use a dynamic import or assuming it's available
-      const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = window.docx;
+      // 1. Generate Word Document using docx library
+      const docxLib = window.docx;
+      if (!docxLib) {
+        throw new Error('Word generation library not loaded yet. Please refresh and try again.');
+      }
+
+      const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = docxLib;
 
       const doc = new Document({
         sections: [{
