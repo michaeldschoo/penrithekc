@@ -83,7 +83,7 @@ class WritingApp extends HTMLElement {
       formData.append('Essay Content', this.state.content);
       formData.append('_subject', `Writing Practice: ${this.state.firstName} ${this.state.lastName} - Test #${this.state.testNumber}`);
 
-      const response = await fetch('https://formspree.io/f/penrithekc@gmail.com', {
+      const response = await fetch('https://formspree.io/f/xdabjkqr', {
         method: 'POST',
         body: formData,
         headers: {
