@@ -1,3 +1,5 @@
+import * as docx from 'https://esm.sh/docx@8.5.0';
+
 class WritingApp extends HTMLElement {
   constructor() {
     super();
@@ -75,13 +77,12 @@ class WritingApp extends HTMLElement {
     this.updateState('message', 'Generating Word document and sending...');
 
     try {
-      // 1. Generate Word Document using docx library
-      const docxLib = window.docx;
-      if (!docxLib) {
-        throw new Error('Word generation library not loaded yet. Please refresh and try again.');
-      }
+      // 1. Generate Word Document using imported docx module
+      const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = docx;
 
-      const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = docxLib;
+      if (!Document) {
+        throw new Error('Word generation library not ready. Please try again in a moment.');
+      }
 
       const doc = new Document({
         sections: [{
