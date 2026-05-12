@@ -75,9 +75,12 @@ class WritingApp extends HTMLElement {
     this.updateState('message', 'Sending your work...');
 
     try {
-      const response = await fetch('https://formspree.io/f/penrithekc@gmail.com', {
+      const response = await fetch('https://formspree.io/penrithekc@gmail.com', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({
           firstName: this.state.firstName,
           lastName: this.state.lastName,
