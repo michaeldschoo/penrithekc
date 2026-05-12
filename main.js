@@ -1,5 +1,3 @@
-import * as docx from 'https://esm.sh/docx@8.5.0';
-
 class WritingApp extends HTMLElement {
   constructor() {
     super();
@@ -74,63 +72,17 @@ class WritingApp extends HTMLElement {
     }
 
     this.updateState('isSubmitting', true);
-    this.updateState('message', 'Generating Word document and sending...');
+    this.updateState('message', 'Sending your work...');
 
     try {
-      // 1. Generate Word Document using imported docx module
-      const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = docx;
-
-      if (!Document) {
-        throw new Error('Word generation library not ready. Please try again in a moment.');
-      }
-
-      const doc = new Document({
-        sections: [{
-          properties: {},
-          children: [
-            new Paragraph({
-              text: "Writing Practice Submission",
-              heading: HeadingLevel.HEADING_1,
-              alignment: AlignmentType.CENTER,
-            }),
-            new Paragraph({
-              children: [
-                new TextRun({ text: `Student Name: ${this.state.firstName} ${this.state.lastName}`, bold: true }),
-              ],
-              spacing: { before: 200 },
-            }),
-            new Paragraph({
-              children: [
-                new TextRun({ text: `Test Number: #${this.state.testNumber}`, bold: true }),
-              ],
-              spacing: { before: 100 },
-            }),
-            new Paragraph({
-              text: "",
-              spacing: { before: 400 },
-            }),
-            ...this.state.content.split('\n').map(line => new Paragraph({
-              children: [new TextRun(line)],
-              spacing: { before: 120 },
-            })),
-          ],
-        }],
-      });
-
-      const blob = await Packer.toBlob(doc);
-      const file = new File([blob], `${this.state.firstName}_${this.state.lastName}_Test${this.state.testNumber}.docx`, {
-        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      });
-
-      // 2. Prepare FormData for Web3Forms
+      // 1. Prepare FormData for Web3Forms (Text-only for Free Tier)
       const formData = new FormData();
       formData.append('access_key', 'dbd5f171-d307-45e9-80c6-b8bfec1f6de5');
-      formData.append('First Name', this.state.firstName);
-      formData.append('Last Name', this.state.lastName);
-      formData.append('Test #', this.state.testNumber);
-      formData.append('Essay Content', this.state.content);
-      formData.append('attachment', file); // Web3Forms automatically handles the 'attachment' field
-      formData.append('subject', `Writing Practice (Word Doc): ${this.state.firstName} ${this.state.lastName} - Test #${this.state.testNumber}`);
+      formData.append('Student_First_Name', this.state.firstName);
+      formData.append('Student_Last_Name', this.state.lastName);
+      formData.append('Test_Number', this.state.testNumber);
+      formData.append('Essay_Content', this.state.content);
+      formData.append('subject', `Writing Submission: ${this.state.firstName} ${this.state.lastName} - #${this.state.testNumber}`);
       formData.append('from_name', 'Penrithekc Writing App');
 
       const response = await fetch('https://api.web3forms.com/submit', {
@@ -142,30 +94,30 @@ class WritingApp extends HTMLElement {
       });
 
       const data = await response.json();
-if (response.ok) {
-  // 1. Clear physical storage
-  localStorage.removeItem(this.storageKey);
 
-  // 2. Reset internal state to clear the UI
-  this.state = {
-    firstName: '',
-    lastName: '',
-    testNumber: '',
-    content: '',
-    isSubmitting: false,
-    message: 'Success! Your work has been submitted. The form has been reset.'
-  };
+      if (response.ok) {
+        // 1. Clear physical storage
+        localStorage.removeItem(this.storageKey);
 
-  this.render();
+        // 2. Reset internal state to clear the UI
+        this.state = {
+          firstName: '',
+          lastName: '',
+          testNumber: '',
+          content: '',
+          isSubmitting: false,
+          message: 'Success! Your work has been submitted. The form has been reset.'
+        };
 
-  setTimeout(() => {
-    window.close();
-    // In case window.close() is blocked, keep the reset state visible
-    this.updateState('message', 'Submission successful. You can now close this tab or start a new writing.');
-  }, 3000);
-} else {
-        console.error('Formspree Error:', data);
-        throw new Error(data.error || 'Submission failed');
+        this.render();
+
+        setTimeout(() => {
+          window.close();
+          this.updateState('message', 'Submission successful. You can now close this tab.');
+        }, 3000);
+      } else {
+        console.error('Web3Forms Error:', data);
+        throw new Error(data.message || 'Submission failed');
       }
     } catch (error) {
       console.error('Submission Catch:', error);
