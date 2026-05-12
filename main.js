@@ -92,15 +92,28 @@ class WritingApp extends HTMLElement {
       });
 
       const data = await response.json();
+if (response.ok) {
+  // 1. Clear physical storage
+  localStorage.removeItem(this.storageKey);
 
-      if (response.ok) {
-        localStorage.removeItem(this.storageKey);
-        this.updateState('message', 'Success! Your work has been submitted. This window will close shortly.');
-        setTimeout(() => {
-          window.close();
-          this.updateState('message', 'Submission successful. You can now close this tab.');
-        }, 3000);
-      } else {
+  // 2. Reset internal state to clear the UI
+  this.state = {
+    firstName: '',
+    lastName: '',
+    testNumber: '',
+    content: '',
+    isSubmitting: false,
+    message: 'Success! Your work has been submitted. The form has been reset.'
+  };
+
+  this.render();
+
+  setTimeout(() => {
+    window.close();
+    // In case window.close() is blocked, keep the reset state visible
+    this.updateState('message', 'Submission successful. You can now close this tab or start a new writing.');
+  }, 3000);
+} else {
         console.error('Formspree Error:', data);
         throw new Error(data.error || 'Submission failed');
       }
