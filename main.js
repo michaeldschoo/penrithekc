@@ -75,15 +75,17 @@ class WritingApp extends HTMLElement {
     this.updateState('message', 'Sending your work...');
 
     try {
-      // Use FormData for better compatibility with Formspree
+      // Use FormData for compatibility with Web3Forms
       const formData = new FormData();
+      formData.append('access_key', 'dbd5f171-d307-45e9-80c6-b8bfec1f6de5');
       formData.append('First Name', this.state.firstName);
       formData.append('Last Name', this.state.lastName);
       formData.append('Test #', this.state.testNumber);
       formData.append('Essay Content', this.state.content);
-      formData.append('_subject', `Writing Practice: ${this.state.firstName} ${this.state.lastName} - Test #${this.state.testNumber}`);
+      formData.append('subject', `Writing Practice: ${this.state.firstName} ${this.state.lastName} - Test #${this.state.testNumber}`);
+      formData.append('from_name', 'Penrithekc Writing App');
 
-      const response = await fetch('https://formspree.io/f/xdabjkqr', {
+      const response = await fetch('https://api.web3forms.com/submit', {
         method: 'POST',
         body: formData,
         headers: {
