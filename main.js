@@ -75,35 +75,39 @@ class WritingApp extends HTMLElement {
     this.updateState('message', 'Sending your work...');
 
     try {
-      const response = await fetch('https://formspree.io/penrithekc@gmail.com', {
+      // Use FormData for better compatibility with Formspree
+      const formData = new FormData();
+      formData.append('First Name', this.state.firstName);
+      formData.append('Last Name', this.state.lastName);
+      formData.append('Test #', this.state.testNumber);
+      formData.append('Essay Content', this.state.content);
+      formData.append('_subject', `Writing Practice: ${this.state.firstName} ${this.state.lastName} - Test #${this.state.testNumber}`);
+
+      const response = await fetch('https://formspree.io/f/penrithekc@gmail.com', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
+        body: formData,
+        headers: {
           'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          firstName: this.state.firstName,
-          lastName: this.state.lastName,
-          testNumber: this.state.testNumber,
-          content: this.state.content,
-          _subject: `Writing Practice Submission: ${this.state.firstName} ${this.state.lastName} - Test #${this.state.testNumber}`
-        })
+        }
       });
+
+      const data = await response.json();
 
       if (response.ok) {
         localStorage.removeItem(this.storageKey);
         this.updateState('message', 'Success! Your work has been submitted. This window will close shortly.');
         setTimeout(() => {
           window.close();
-          // Fallback if window.close() is blocked
           this.updateState('message', 'Submission successful. You can now close this tab.');
         }, 3000);
       } else {
-        throw new Error('Submission failed');
+        console.error('Formspree Error:', data);
+        throw new Error(data.error || 'Submission failed');
       }
     } catch (error) {
+      console.error('Submission Catch:', error);
       this.updateState('isSubmitting', false);
-      this.updateState('message', 'Error: Could not send email. Please check your connection and try again.');
+      this.updateState('message', `Error: ${error.message || 'Could not send email'}. Please try again.`);
     }
   }
 
