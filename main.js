@@ -72,17 +72,60 @@ class WritingApp extends HTMLElement {
     }
 
     this.updateState('isSubmitting', true);
-    this.updateState('message', 'Sending your work...');
+    this.updateState('message', 'Generating Word document and sending...');
 
     try {
-      // Use FormData for compatibility with Web3Forms
+      // 1. Generate Word Document using docx library (loaded via CDN in index.html or dynamically)
+      // For reliability, we'll use a dynamic import or assuming it's available
+      const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = window.docx;
+
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: [
+            new Paragraph({
+              text: "Writing Practice Submission",
+              heading: HeadingLevel.HEADING_1,
+              alignment: AlignmentType.CENTER,
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: `Student Name: ${this.state.firstName} ${this.state.lastName}`, bold: true }),
+              ],
+              spacing: { before: 200 },
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: `Test Number: #${this.state.testNumber}`, bold: true }),
+              ],
+              spacing: { before: 100 },
+            }),
+            new Paragraph({
+              text: "",
+              spacing: { before: 400 },
+            }),
+            ...this.state.content.split('\n').map(line => new Paragraph({
+              children: [new TextRun(line)],
+              spacing: { before: 120 },
+            })),
+          ],
+        }],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      const file = new File([blob], `${this.state.firstName}_${this.state.lastName}_Test${this.state.testNumber}.docx`, {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      });
+
+      // 2. Prepare FormData for Web3Forms
       const formData = new FormData();
       formData.append('access_key', 'dbd5f171-d307-45e9-80c6-b8bfec1f6de5');
       formData.append('First Name', this.state.firstName);
       formData.append('Last Name', this.state.lastName);
       formData.append('Test #', this.state.testNumber);
       formData.append('Essay Content', this.state.content);
-      formData.append('subject', `Writing Practice: ${this.state.firstName} ${this.state.lastName} - Test #${this.state.testNumber}`);
+      formData.append('attachment', file); // Web3Forms automatically handles the 'attachment' field
+      formData.append('subject', `Writing Practice (Word Doc): ${this.state.firstName} ${this.state.lastName} - Test #${this.state.testNumber}`);
       formData.append('from_name', 'Penrithekc Writing App');
 
       const response = await fetch('https://api.web3forms.com/submit', {
