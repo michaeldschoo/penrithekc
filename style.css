@@ -1,1 +1,41 @@
-/* Add styles here */
+/* Global Styles and Reset */
+:root {
+  --bg-color: oklch(0.97 0.01 250);
+  --text-color: oklch(0.2 0.05 250);
+  --texture-opacity: 0.03;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-color);
+  background-image: url("https://www.transparenttextures.com/patterns/cubes.png"); /* Subtle texture */
+  color: var(--text-color);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  min-height: 100vh;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Ensure the custom element takes full width */
+writing-app {
+  display: block;
+  width: 100%;
+}
+
+/* Accessibility: focus visible for keyboard users */
+:focus-visible {
+  outline: 3px solid oklch(0.6 0.2 250);
+  outline-offset: 2px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  body {
+    padding: 1rem;
+  }
+}
