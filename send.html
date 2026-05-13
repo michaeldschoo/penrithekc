@@ -8,11 +8,24 @@
     <script src="https://cdn.jsdelivr.net/npm/docx@8.2.2/build/index.js"></script>
     <script>
         window.addEventListener('load', () => {
-            console.log('--- Checking for docx globally ---');
-            console.log('Is window.docx defined?', window.docx);
-            
-            // docx.js는 보통 window.docx 또는 전역 docx를 노출함.
-            // 하지만 번들 구조에 따라 다를 수 있음.
+            console.log('--- Deep scanning for docx library ---');
+            // 많은 최신 번들은 module.exports나 default 속성을 사용함
+            const checkObj = (obj) => {
+                if (!obj) return false;
+                return obj.Document || obj.Paragraph || obj.default?.Document || obj.default?.Paragraph;
+            };
+
+            window.docxLib = window.docx || window;
+
+            // 전역 스코프 전체 탐색
+            for (let key in window) {
+                if (window[key] && checkObj(window[key])) {
+                    console.log('Found potential docx lib at window.' + key);
+                    window.docxLib = window[key];
+                    break;
+                }
+            }
+            console.log('Final docxLib structure:', window.docxLib);
         });
     </script>
     <style>
