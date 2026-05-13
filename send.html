@@ -5,19 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sending Essay as Word - Penrithekc</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/docx@8.2.2/build/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docx@8.2.2/build/index.js"></script>
     <script>
         window.addEventListener('load', () => {
-            console.log('--- Debugging docx library ---');
-            console.log('Type of window.docx:', typeof window.docx);
-            // 모든 전역 변수에서 docx 관련 확인
+            console.log('--- Scanning window for docx library ---');
+            // Try to find the docx object if it's not under window.docx
+            let docxLib = null;
             Object.keys(window).forEach(key => {
-                if(key.toLowerCase().includes('docx')) console.log('Found potential docx key:', key, window[key]);
+                if (window[key] && typeof window[key] === 'object' && ('Document' in window[key] || 'Packer' in window[key])) {
+                    console.log('Found docx-like object at window.' + key);
+                    docxLib = window[key];
+                }
             });
+            window.docx = docxLib || window.docx;
         });
     </script>
     <style>
-            background: oklch(0.98 0.01 250);
+
             display: flex;
             justify-content: center;
             align-items: center;
