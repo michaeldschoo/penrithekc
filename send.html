@@ -5,14 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sending Essay as Word - Penrithekc</title>
     <link rel="stylesheet" href="style.css">
-    <script type="module">
-        import * as docx from 'https://cdn.jsdelivr.net/npm/docx@8.2.2/+esm';
-        window.docxLib = docx;
-        console.log('docx library loaded via ESM:', docx);
-    </script>
     <style>
-
-
+        body {
+            background: oklch(0.98 0.01 250);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -87,8 +82,9 @@
         </div>
     </div>
 
-    <script>
-        // --- GAS Web App URL ---
+    <script type="module">
+        import * as docx from 'https://cdn.jsdelivr.net/npm/docx@8.2.2/+esm';
+
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxDGUmSRLynQJBepZOL7XwuE2RUKbveg2jI9_EXgBzSJXBjVOExY_475blS4XNWt1A/exec';
 
         async function generateAndSend() {
@@ -107,49 +103,25 @@
                     return;
                 }
 
-                // 1. Generate Word Document using docx.js
-                // Library classes are exposed directly on the window object.
-                const { Document, Paragraph, TextRun, AlignmentType, Packer } = window;
-
-                // Safety check: ensure classes are found
-                const DocClass = Document || window.docx?.Document;
-                const ParaClass = Paragraph || window.docx?.Paragraph;
-                const TextRunClass = TextRun || window.docx?.TextRun;
-                const AlignClass = AlignmentType || window.docx?.AlignmentType;
-                const PackerClass = Packer || window.docx?.Packer;
-
                 const paragraphs = data.content.split('\n').map(line => {
-                    return new ParaClass({
-                        children: [new TextRunClass({ text: line })],
+                    return new docx.Paragraph({
+                        children: [new docx.TextRun({ text: line })],
                         spacing: { line: 480 },
                     });
                 });
 
-                const doc = new DocClass({
+                const doc = new docx.Document({
                     sections: [{
-                        properties: {},
                         children: [
-                            new ParaClass({
-                                children: [
-                                    new TextRunClass({ text: "Writing Practice Submission", bold: true, size: 32 }),
-                                ],
+                            new docx.Paragraph({
+                                children: [new docx.TextRun({ text: "Writing Practice Submission", bold: true, size: 32 })],
                                 spacing: { after: 400 },
-                                alignment: AlignClass.CENTER,
+                                alignment: docx.AlignmentType.CENTER,
                             }),
-                            new ParaClass({
-                                children: [
-                                    new TextRunClass({ text: `Student Name: ${data.firstName} ${data.lastName}`, bold: true }),
-                                ],
-                            }),
-                            new ParaClass({
-                                children: [
-                                    new TextRunClass({ text: `Test Number: #${data.testNumber}`, bold: true }),
-                                ],
-                            }),
-                            new ParaClass({
-                                children: [
-                                    new TextRunClass({ text: `Date: ${new Date().toLocaleDateString()}`, bold: true }),
-                                ],
+                            new docx.Paragraph({ children: [new docx.TextRun({ text: `Student: ${data.firstName} ${data.lastName}`, bold: true })] }),
+                            new docx.Paragraph({ children: [new docx.TextRun({ text: `Test #: #${data.testNumber}`, bold: true })] }),
+                            new docx.Paragraph({
+                                children: [new docx.TextRun({ text: `Date: ${new Date().toLocaleDateString()}`, bold: true })],
                                 spacing: { after: 600 },
                             }),
                             ...paragraphs
@@ -157,48 +129,30 @@
                     }],
                 });
 
-                const blob = await PackerClass.toBlob(doc);
-
-                // 2. Convert Blob to Base64
+                const blob = await docx.Packer.toBlob(doc);
                 const base64 = await blobToBase64(blob);
 
-                // 3. Send to GAS
                 document.getElementById('status-loading').querySelector('h2').innerText = 'Sending to Teacher...';
                 
-                try {
-                    const response = await fetch(GAS_URL, {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            firstName: data.firstName,
-                            lastName: data.lastName,
-                            testNumber: data.testNumber,
-                            fileBase64: base64.split(',')[1]
-                        })
-                    });
+                const response = await fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        firstName: data.firstName,
+                        lastName: data.lastName,
+                        testNumber: data.testNumber,
+                        fileBase64: base64.split(',')[1]
+                    })
+                });
 
-                    // If we get here, the request was at least sent
-                    try {
-                        const result = await response.json();
-                        if (result.result === 'success') {
-                            showSuccess();
-                            localStorage.removeItem(storageKey);
-                        } else {
-                            showError('Server Error: ' + (result.error || 'The server returned an unsuccessful result.'));
-                        }
-                    } catch (jsonError) {
-                        // GAS sometimes returns 302 or HTML. If fetch follows and gets HTML, json() fails.
-                        console.warn('Could not parse JSON response:', jsonError);
-                        showSuccess(); // Optimistic success if it got past the fetch
-                        localStorage.removeItem(storageKey);
-                    }
-                } catch (fetchError) {
-                    console.error('Fetch Error:', fetchError);
-                    showError('Network Error: ' + fetchError.message + '. Please check your GAS deployment and CORS settings.');
+                const result = await response.json();
+                if (result.result === 'success') {
+                    showSuccess();
+                    localStorage.removeItem(storageKey);
+                } else {
+                    showError('Server Error: ' + (result.error || 'Failed'));
                 }
-
             } catch (error) {
-                console.error('Detailed GAS Submission Error:', error);
-                showError('Processing Error: ' + error.message + ' (Check console for details)');
+                showError('Error: ' + error.message);
             }
         }
 
@@ -222,8 +176,7 @@
             document.getElementById('error-message').innerText = msg;
         }
 
-        // Start process on load
-        window.onload = generateAndSend;
+        generateAndSend();
     </script>
 </body>
 </html>
