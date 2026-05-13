@@ -125,16 +125,15 @@
                 }
 
                 // 1. Generate Word Document using docx.js
-                // Depending on the build, classes might be directly on the global docx or a nested object
-                const docxLib = window.docx || window;
-                const { Document, Paragraph, TextRun, AlignmentType, Packer } = docxLib;
+                // Library classes are exposed directly on the window object.
+                const { Document, Paragraph, TextRun, AlignmentType, Packer } = window;
 
-                // Fallback for some bundle structures
-                const DocClass = Document || docxLib.Document;
-                const ParaClass = Paragraph || docxLib.Paragraph;
-                const TextRunClass = TextRun || docxLib.TextRun;
-                const AlignClass = AlignmentType || docxLib.AlignmentType;
-                const PackerClass = Packer || docxLib.Packer;
+                // Safety check: ensure classes are found
+                const DocClass = Document || window.docx?.Document;
+                const ParaClass = Paragraph || window.docx?.Paragraph;
+                const TextRunClass = TextRun || window.docx?.TextRun;
+                const AlignClass = AlignmentType || window.docx?.AlignmentType;
+                const PackerClass = Packer || window.docx?.Packer;
 
                 const paragraphs = data.content.split('\n').map(line => {
                     return new ParaClass({
