@@ -73,29 +73,31 @@
                 const blob = await docx.Packer.toBlob(doc);
                 const reader = new FileReader();
                 reader.readAsDataURL(blob);
-                reader.onloadend = async () => {
+                reader.onloadend = () => {
                     const base64 = reader.result.split(',')[1];
                     
-                    const response = await fetch(GAS_URL, {
-                        method: 'POST',
-                        mode: 'cors',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            firstName: savedData.firstName,
-                            lastName: savedData.lastName,
-                            testNumber: savedData.testNumber,
-                            fileBase64: base64
-                        })
-                    });
-                    
-                    const result = await response.json();
-                    if (result.result === 'success') {
-                        document.getElementById('status-loading').classList.add('hidden');
-                        document.getElementById('status-success').classList.remove('hidden');
-                        localStorage.removeItem('penrithekc_writing_data');
-                    } else {
-                        showError('Server Error: ' + (result.error || 'Failed'));
+                    // Hidden Form submission to bypass CORS
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = GAS_URL;
+
+                    const fields = {
+                        firstName: savedData.firstName,
+                        lastName: savedData.lastName,
+                        testNumber: savedData.testNumber,
+                        fileBase64: base64
+                    };
+
+                    for (const key in fields) {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = key;
+                        input.value = fields[key];
+                        form.appendChild(input);
                     }
+
+                    document.body.appendChild(form);
+                    form.submit();
                 };
             } catch (error) {
                 showError('Error: ' + error.message);
