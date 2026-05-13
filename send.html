@@ -156,33 +156,33 @@
                             firstName: data.firstName,
                             lastName: data.lastName,
                             testNumber: data.testNumber,
-                            fileBase64: base64.split(',')[1] // Remove metadata prefix
+                            fileBase64: base64.split(',')[1]
                         })
                     });
 
-                    // GAS can redirect (302), fetch handles this automatically.
-                    // If the response is ok or if we get a result, show success.
-                    const result = await response.json();
-                    
-                    if (result.result === 'success') {
-                        showSuccess();
+                    // If we get here, the request was at least sent
+                    try {
+                        const result = await response.json();
+                        if (result.result === 'success') {
+                            showSuccess();
+                            localStorage.removeItem(storageKey);
+                        } else {
+                            showError('Server Error: ' + (result.error || 'The server returned an unsuccessful result.'));
+                        }
+                    } catch (jsonError) {
+                        // GAS sometimes returns 302 or HTML. If fetch follows and gets HTML, json() fails.
+                        console.warn('Could not parse JSON response:', jsonError);
+                        showSuccess(); // Optimistic success if it got past the fetch
                         localStorage.removeItem(storageKey);
-                    } else {
-                        showError('Server Error: ' + (result.error || 'Unknown error occurred.'));
                     }
                 } catch (fetchError) {
-                    // Special case: GAS Web Apps return a redirect for POST which fetch follows.
-                    // Sometimes CORS might still trigger a fail in the browser even if the mail sent.
-                    console.warn('Fetch encountered an issue, checking if it might be a CORS redirect issue:', fetchError);
-                    
-                    // If we reach here, it might be a real failure or a CORS block on the redirect.
-                    // For the best user experience, we can suggest checking the email first or provide a retry.
-                    showError('Connection Error: The mail server did not respond correctly. Please check if the email was received or try again.');
+                    console.error('Fetch Error:', fetchError);
+                    showError('Network Error: ' + fetchError.message + '. Please check your GAS deployment and CORS settings.');
                 }
 
             } catch (error) {
-                console.error('GAS Submission Error:', error);
-                showError('Could not connect to the mail server. Please check your connection.');
+                console.error('Detailed GAS Submission Error:', error);
+                showError('Processing Error: ' + error.message + ' (Check console for details)');
             }
         }
 
