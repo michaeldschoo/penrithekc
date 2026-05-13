@@ -7,15 +7,20 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/docx@8.2.2/build/index.js"></script>
     <script>
-        // docx 8.x is a module, not a global object in modern bundles.
-        // We will try to patch it or find the correct reference.
-        window.addEventListener('load', async () => {
-            console.log('--- Initializing docx extraction ---');
-            // Many modern CDNs for docx 8+ export the module structure.
-            // We'll trust the global 'docx' if it exists.
+        window.addEventListener('load', () => {
+            console.log('--- Inspecting docx lib ---');
+            // docx 8.x 번들은 전역 'docx' 변수에 객체를 담는 경우가 많음
             if (typeof docx !== 'undefined') {
-                console.log('Found global docx:', docx);
+                console.log('docx found:', docx);
                 window.docxLib = docx;
+            } else {
+                console.log('docx is undefined, searching window...');
+                for (let key in window) {
+                    if (window[key] && (window[key].Document || window[key].Packer)) {
+                        console.log('Found potential docx at:', key);
+                        window.docxLib = window[key];
+                    }
+                }
             }
         });
     </script>
