@@ -5,24 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sending Essay as Word - Penrithekc</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/docx@8.2.2/build/index.js"></script>
-    <script>
-        window.addEventListener('load', () => {
-            console.log('--- Inspecting docx lib ---');
-            // docx 8.x 번들은 전역 'docx' 변수에 객체를 담는 경우가 많음
-            if (typeof docx !== 'undefined') {
-                console.log('docx found:', docx);
-                window.docxLib = docx;
-            } else {
-                console.log('docx is undefined, searching window...');
-                for (let key in window) {
-                    if (window[key] && (window[key].Document || window[key].Packer)) {
-                        console.log('Found potential docx at:', key);
-                        window.docxLib = window[key];
-                    }
-                }
-            }
-        });
+    <script type="module">
+        import * as docx from 'https://cdn.jsdelivr.net/npm/docx@8.2.2/+esm';
+        window.docxLib = docx;
+        console.log('docx library loaded via ESM:', docx);
     </script>
     <style>
 
