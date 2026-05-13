@@ -38,7 +38,11 @@
     </div>
 
     <script type="module">
-        import * as docx from 'https://cdn.jsdelivr.net/npm/docx@8.2.2/+esm';
+        import * as docxModule from 'https://cdn.jsdelivr.net/npm/docx@8.2.2/+esm';
+        // v8+ ESM 번들은 default 내보내기를 사용할 수 있음. 
+        // 직접 속성으로 접근하거나 default에서 접근.
+        const docx = docxModule.default || docxModule;
+        console.log('docx library loaded:', docx);
 
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxDGUmSRLynQJBepZOL7XwuE2RUKbveg2jI9_EXgBzSJXBjVOExY_475blS4XNWt1A/exec';
 
