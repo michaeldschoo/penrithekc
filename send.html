@@ -6,55 +6,14 @@
     <title>Sending Essay as Word - Penrithekc</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        body {
-            background: oklch(0.98 0.01 250);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        }
-        .send-container {
-            max-width: 500px;
-            width: 90%;
-            background: white;
-            padding: 3rem;
-            border-radius: 16px;
-            box-shadow: 0 10px 40px oklch(0 0 0 / 0.1);
-            text-align: center;
-        }
-        .status-icon {
-            font-size: 4rem;
-            margin-bottom: 1.5rem;
-            display: inline-block;
-        }
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid oklch(0.9 0.02 250);
-            border-top: 5px solid oklch(0.6 0.2 250);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 1.5rem;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        body { background: oklch(0.98 0.01 250); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        .send-container { max-width: 500px; width: 90%; background: white; padding: 3rem; border-radius: 16px; box-shadow: 0 10px 40px oklch(0 0 0 / 0.1); text-align: center; }
+        .status-icon { font-size: 4rem; margin-bottom: 1.5rem; display: inline-block; }
+        .loading-spinner { width: 50px; height: 50px; border: 5px solid oklch(0.9 0.02 250); border-top: 5px solid oklch(0.6 0.2 250); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1.5rem; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         h2 { color: oklch(0.4 0.05 250); margin-bottom: 1rem; }
         p { color: oklch(0.5 0.02 250); line-height: 1.6; }
-        .btn-back {
-            margin-top: 2rem;
-            display: inline-block;
-            padding: 0.8rem 2rem;
-            background: oklch(0.6 0.2 250);
-            color: white;
-            text-decoration: none;
-            border-radius: 50px;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
+        .btn-back { margin-top: 2rem; display: inline-block; padding: 0.8rem 2rem; background: oklch(0.6 0.2 250); color: white; text-decoration: none; border-radius: 50px; font-weight: 600; transition: all 0.2s; }
         .btn-back:hover { transform: translateY(-2px); opacity: 0.9; }
         .hidden { display: none; }
     </style>
@@ -64,20 +23,16 @@
         <div id="status-loading">
             <div class="loading-spinner"></div>
             <h2>Preparing your Word document...</h2>
-            <p>We are formatting your essay and preparing it for submission.</p>
         </div>
-
         <div id="status-success" class="hidden">
             <div class="status-icon">✅</div>
             <h2>Submission Successful!</h2>
-            <p>Your essay has been sent as a Word attachment to <strong>penrithekc@gmail.com</strong>.</p>
             <a href="index.html" class="btn-back">Back to Writing</a>
         </div>
-
         <div id="status-error" class="hidden">
             <div class="status-icon">❌</div>
             <h2>Submission Failed</h2>
-            <p id="error-message">Something went wrong while sending your work.</p>
+            <p id="error-message"></p>
             <a href="index.html" class="btn-back">Try Again</a>
         </div>
     </div>
@@ -88,22 +43,10 @@
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxDGUmSRLynQJBepZOL7XwuE2RUKbveg2jI9_EXgBzSJXBjVOExY_475blS4XNWt1A/exec';
 
         async function generateAndSend() {
-            const storageKey = 'penrithekc_writing_data';
-            const savedData = localStorage.getItem(storageKey);
-
-            if (!savedData) {
-                showError('No essay data found. Please write something first.');
-                return;
-            }
-
+            const savedData = JSON.parse(localStorage.getItem('penrithekc_writing_data'));
+            
             try {
-                const data = JSON.parse(savedData);
-                if (!data.content) {
-                    showError('Essay content is empty.');
-                    return;
-                }
-
-                const paragraphs = data.content.split('\n').map(line => {
+                const paragraphs = savedData.content.split('\n').map(line => {
                     return new docx.Paragraph({
                         children: [new docx.TextRun({ text: line })],
                         spacing: { line: 480 },
@@ -115,59 +58,40 @@
                         children: [
                             new docx.Paragraph({
                                 children: [new docx.TextRun({ text: "Writing Practice Submission", bold: true, size: 32 })],
-                                spacing: { after: 400 },
                                 alignment: docx.AlignmentType.CENTER,
                             }),
-                            new docx.Paragraph({ children: [new docx.TextRun({ text: `Student: ${data.firstName} ${data.lastName}`, bold: true })] }),
-                            new docx.Paragraph({ children: [new docx.TextRun({ text: `Test #: #${data.testNumber}`, bold: true })] }),
-                            new docx.Paragraph({
-                                children: [new docx.TextRun({ text: `Date: ${new Date().toLocaleDateString()}`, bold: true })],
-                                spacing: { after: 600 },
-                            }),
+                            new docx.Paragraph({ children: [new docx.TextRun({ text: `Student: ${savedData.firstName} ${savedData.lastName}`, bold: true })] }),
                             ...paragraphs
                         ],
                     }],
                 });
 
                 const blob = await docx.Packer.toBlob(doc);
-                const base64 = await blobToBase64(blob);
-
-                document.getElementById('status-loading').querySelector('h2').innerText = 'Sending to Teacher...';
-                
-                const response = await fetch(GAS_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        firstName: data.firstName,
-                        lastName: data.lastName,
-                        testNumber: data.testNumber,
-                        fileBase64: base64.split(',')[1]
-                    })
-                });
-
-                const result = await response.json();
-                if (result.result === 'success') {
-                    showSuccess();
-                    localStorage.removeItem(storageKey);
-                } else {
-                    showError('Server Error: ' + (result.error || 'Failed'));
-                }
+                const reader = new FileReader();
+                reader.readAsDataURL(blob);
+                reader.onloadend = async () => {
+                    const base64 = reader.result.split(',')[1];
+                    const response = await fetch(GAS_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            firstName: savedData.firstName,
+                            lastName: savedData.lastName,
+                            testNumber: savedData.testNumber,
+                            fileBase64: base64
+                        })
+                    });
+                    const result = await response.json();
+                    if (result.result === 'success') {
+                        document.getElementById('status-loading').classList.add('hidden');
+                        document.getElementById('status-success').classList.remove('hidden');
+                        localStorage.removeItem('penrithekc_writing_data');
+                    } else {
+                        showError('Server Error: ' + (result.error || 'Failed'));
+                    }
+                };
             } catch (error) {
                 showError('Error: ' + error.message);
             }
-        }
-
-        function blobToBase64(blob) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-            });
-        }
-
-        function showSuccess() {
-            document.getElementById('status-loading').classList.add('hidden');
-            document.getElementById('status-success').classList.remove('hidden');
         }
 
         function showError(msg) {
