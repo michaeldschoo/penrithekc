@@ -38,18 +38,18 @@
     </div>
 
     <script type="module">
-        import * as docxModule from 'https://cdn.jsdelivr.net/npm/docx@8.2.2/+esm';
-        // v8+ ESM 번들은 default 내보내기를 사용할 수 있음. 
-        // 직접 속성으로 접근하거나 default에서 접근.
-        const docx = docxModule.default || docxModule;
-        console.log('docx library loaded:', docx);
+        import * as docx from 'https://cdn.jsdelivr.net/npm/docx@8.2.2/+esm';
 
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxDGUmSRLynQJBepZOL7XwuE2RUKbveg2jI9_EXgBzSJXBjVOExY_475blS4XNWt1A/exec';
 
         async function generateAndSend() {
-            const savedData = JSON.parse(localStorage.getItem('penrithekc_writing_data'));
-            
             try {
+                const rawData = localStorage.getItem('penrithekc_writing_data');
+                if (!rawData) throw new Error('No essay data found.');
+                
+                const savedData = JSON.parse(rawData);
+                if (!savedData.content) throw new Error('Essay content is empty.');
+
                 const paragraphs = savedData.content.split('\n').map(line => {
                     return new docx.Paragraph({
                         children: [new docx.TextRun({ text: line })],
@@ -73,39 +73,29 @@
                 const blob = await docx.Packer.toBlob(doc);
                 const reader = new FileReader();
                 reader.readAsDataURL(blob);
-                reader.onloadend = () => {
+                reader.onloadend = async () => {
                     const base64 = reader.result.split(',')[1];
                     
-                    // Hidden Form submission to bypass CORS
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = GAS_URL;
-                    form.style.display = 'none';
-
-                    const fields = {
-                        firstName: savedData.firstName,
-                        lastName: savedData.lastName,
-                        testNumber: savedData.testNumber,
-                        fileBase64: base64
-                    };
-
-                    for (const key in fields) {
-                        const input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.name = key;
-                        input.value = fields[key];
-                        form.appendChild(input);
-                    }
-
-                    document.body.appendChild(form);
-                    form.submit();
+                    const response = await fetch(GAS_URL, {
+                        method: 'POST',
+                        mode: 'cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            firstName: savedData.firstName,
+                            lastName: savedData.lastName,
+                            testNumber: savedData.testNumber,
+                            fileBase64: base64
+                        })
+                    });
                     
-                    // Success callback assumed after form submit
-                    setTimeout(() => {
+                    const result = await response.json();
+                    if (result.result === 'success') {
                         document.getElementById('status-loading').classList.add('hidden');
                         document.getElementById('status-success').classList.remove('hidden');
                         localStorage.removeItem('penrithekc_writing_data');
-                    }, 2000);
+                    } else {
+                        showError('Server Error: ' + (result.error || 'Failed'));
+                    }
                 };
             } catch (error) {
                 showError('Error: ' + error.message);
