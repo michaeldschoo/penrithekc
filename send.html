@@ -8,11 +8,15 @@
     <script src="https://unpkg.com/docx@8.2.2/build/index.js"></script>
     <script>
         window.addEventListener('load', () => {
-            console.log('Available window.docx:', window.docx);
+            console.log('--- Debugging docx library ---');
+            console.log('Type of window.docx:', typeof window.docx);
+            // 모든 전역 변수에서 docx 관련 확인
+            Object.keys(window).forEach(key => {
+                if(key.toLowerCase().includes('docx')) console.log('Found potential docx key:', key, window[key]);
+            });
         });
     </script>
     <style>
-        body {
             background: oklch(0.98 0.01 250);
             display: flex;
             justify-content: center;
