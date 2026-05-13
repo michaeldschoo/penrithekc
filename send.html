@@ -6,6 +6,11 @@
     <title>Sending Essay as Word - Penrithekc</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/docx@8.2.2/build/index.js"></script>
+    <script>
+        window.addEventListener('load', () => {
+            console.log('Available window.docx:', window.docx);
+        });
+    </script>
     <style>
         body {
             background: oklch(0.98 0.01 250);
