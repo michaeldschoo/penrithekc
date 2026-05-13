@@ -149,24 +149,36 @@
                 // 3. Send to GAS
                 document.getElementById('status-loading').querySelector('h2').innerText = 'Sending to Teacher...';
                 
-                const response = await fetch(GAS_URL, {
-                    method: 'POST',
-                    mode: 'no-cors', // GAS Web Apps often require no-cors for simple POST
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        firstName: data.firstName,
-                        lastName: data.lastName,
-                        testNumber: data.testNumber,
-                        fileBase64: base64.split(',')[1] // Remove metadata prefix
-                    })
-                });
+                try {
+                    const response = await fetch(GAS_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            firstName: data.firstName,
+                            lastName: data.lastName,
+                            testNumber: data.testNumber,
+                            fileBase64: base64.split(',')[1] // Remove metadata prefix
+                        })
+                    });
 
-                // Since 'no-cors' doesn't return response details, we assume success if no error is thrown
-                // or we can use a small delay then show success. 
-                // Better approach: User should handle CORS in GAS. 
-                // For now, let's provide a "Optimistic Success" or a real fetch if possible.
-                showSuccess();
-                localStorage.removeItem(storageKey); // Clear on success
+                    // GAS can redirect (302), fetch handles this automatically.
+                    // If the response is ok or if we get a result, show success.
+                    const result = await response.json();
+                    
+                    if (result.result === 'success') {
+                        showSuccess();
+                        localStorage.removeItem(storageKey);
+                    } else {
+                        showError('Server Error: ' + (result.error || 'Unknown error occurred.'));
+                    }
+                } catch (fetchError) {
+                    // Special case: GAS Web Apps return a redirect for POST which fetch follows.
+                    // Sometimes CORS might still trigger a fail in the browser even if the mail sent.
+                    console.warn('Fetch encountered an issue, checking if it might be a CORS redirect issue:', fetchError);
+                    
+                    // If we reach here, it might be a real failure or a CORS block on the redirect.
+                    // For the best user experience, we can suggest checking the email first or provide a retry.
+                    showError('Connection Error: The mail server did not respond correctly. Please check if the email was received or try again.');
+                }
 
             } catch (error) {
                 console.error('GAS Submission Error:', error);
