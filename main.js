@@ -75,14 +75,14 @@ class WritingApp extends HTMLElement {
     this.updateState('message', 'Sending your work...');
 
     try {
-      // 1. Prepare FormData for Web3Forms (Text-only for Free Tier)
+      // Use FormData for compatibility with Web3Forms
       const formData = new FormData();
       formData.append('access_key', 'dbd5f171-d307-45e9-80c6-b8bfec1f6de5');
-      formData.append('Student_First_Name', this.state.firstName);
-      formData.append('Student_Last_Name', this.state.lastName);
-      formData.append('Test_Number', this.state.testNumber);
-      formData.append('Essay_Content', this.state.content);
-      formData.append('subject', `Writing Submission: ${this.state.firstName} ${this.state.lastName} - #${this.state.testNumber}`);
+      formData.append('First Name', this.state.firstName);
+      formData.append('Last Name', this.state.lastName);
+      formData.append('Test #', this.state.testNumber);
+      formData.append('Essay Content', this.state.content);
+      formData.append('subject', `Writing Practice: ${this.state.firstName} ${this.state.lastName} - Test #${this.state.testNumber}`);
       formData.append('from_name', 'Penrithekc Writing App');
 
       const response = await fetch('https://api.web3forms.com/submit', {
@@ -94,36 +94,31 @@ class WritingApp extends HTMLElement {
       });
 
       const data = await response.json();
-
       if (response.ok) {
-        // 1. Clear physical storage
         localStorage.removeItem(this.storageKey);
-
-        // 2. Reset internal state to clear the UI
         this.state = {
-          firstName: '',
-          lastName: '',
-          testNumber: '',
-          content: '',
+          firstName: '', lastName: '', testNumber: '', content: '',
           isSubmitting: false,
           message: 'Success! Your work has been submitted. The form has been reset.'
         };
-
         this.render();
-
-        setTimeout(() => {
-          window.close();
-          this.updateState('message', 'Submission successful. You can now close this tab.');
-        }, 3000);
+        setTimeout(() => { window.close(); }, 3000);
       } else {
-        console.error('Web3Forms Error:', data);
         throw new Error(data.message || 'Submission failed');
       }
     } catch (error) {
-      console.error('Submission Catch:', error);
       this.updateState('isSubmitting', false);
       this.updateState('message', `Error: ${error.message || 'Could not send email'}. Please try again.`);
     }
+  }
+
+  handleWordSubmit() {
+    if (!this.state.firstName || !this.state.lastName || !this.state.testNumber || !this.state.content) {
+      this.updateState('message', 'Please fill in all fields before submitting.');
+      return;
+    }
+    this.saveData();
+    window.location.href = 'send.html';
   }
 
   render() {
@@ -146,11 +141,7 @@ class WritingApp extends HTMLElement {
           container-type: inline-size;
         }
 
-        header {
-          text-align: center;
-          margin-bottom: 2rem;
-        }
-
+        header { text-align: center; margin-bottom: 2rem; }
         h1 {
           font-size: 2.5rem;
           margin-bottom: 0.5rem;
@@ -166,23 +157,11 @@ class WritingApp extends HTMLElement {
         }
 
         @container (min-width: 600px) {
-          .form-grid {
-            grid-template-columns: 1fr 1fr 0.5fr;
-          }
+          .form-grid { grid-template-columns: 1fr 1fr 0.5fr; }
         }
 
-        .field-group {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
-        label {
-          font-weight: 600;
-          font-size: 0.9rem;
-          color: oklch(0.4 0.05 250);
-        }
-
+        .field-group { display: flex; flex-direction: column; gap: 0.5rem; }
+        label { font-weight: 600; font-size: 0.9rem; color: oklch(0.4 0.05 250); }
         input {
           padding: 0.8rem;
           border: 2px solid oklch(0.9 0.02 250);
@@ -190,7 +169,6 @@ class WritingApp extends HTMLElement {
           font-size: 1rem;
           transition: all 0.2s ease;
         }
-
         input:focus {
           outline: none;
           border-color: oklch(0.6 0.2 250);
@@ -201,13 +179,12 @@ class WritingApp extends HTMLElement {
           position: relative;
           background: white;
           padding: 2.5rem;
-          min-height: 1200px; /* Approximate height for 2 A4 pages */
+          min-height: 1200px;
           border: 1px solid oklch(0.9 0.02 250);
           box-shadow: inset 0 0 10px oklch(0 0 0 / 0.02), 5px 5px 15px oklch(0 0 0 / 0.05);
           border-radius: 4px;
           margin-bottom: 2rem;
-          background-image: 
-            linear-gradient(oklch(0.95 0.01 250) 1px, transparent 1px);
+          background-image: linear-gradient(oklch(0.95 0.01 250) 1px, transparent 1px);
           background-size: 100% 2.5rem;
           line-height: 2.5rem;
         }
@@ -223,39 +200,43 @@ class WritingApp extends HTMLElement {
           background: transparent;
           color: oklch(0.15 0.02 250);
         }
-
-        textarea:focus {
-          outline: none;
-        }
+        textarea:focus { outline: none; }
 
         .controls {
           display: flex;
           flex-direction: column;
           align-items: center;
+          gap: 1.5rem;
+        }
+
+        .button-group {
+          display: flex;
           gap: 1rem;
+          flex-wrap: wrap;
+          justify-content: center;
         }
 
         button {
           background: oklch(0.6 0.2 250);
           color: white;
           border: none;
-          padding: 1rem 3rem;
+          padding: 1rem 2rem;
           font-size: 1.1rem;
           font-weight: 700;
           border-radius: 50px;
           cursor: pointer;
-          transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+          transition: all 0.2s;
           box-shadow: 0 4px 15px oklch(0.6 0.2 250 / 0.4);
         }
 
-        button:hover:not(:disabled) {
-          background: oklch(0.55 0.2 250);
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px oklch(0.6 0.2 250 / 0.5);
+        button.secondary {
+          background: oklch(0.7 0.15 200);
+          box-shadow: 0 4px 15px oklch(0.7 0.15 200 / 0.4);
         }
 
-        button:active:not(:disabled) {
-          transform: translateY(0);
+        button:hover:not(:disabled) {
+          transform: translateY(-2px);
+          filter: brightness(1.1);
         }
 
         button:disabled {
@@ -269,14 +250,7 @@ class WritingApp extends HTMLElement {
           text-align: center;
           padding: 1rem;
           border-radius: 8px;
-          animation: fadeIn 0.3s ease;
         }
-
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
         .error { color: oklch(0.5 0.2 20); }
         .success { color: oklch(0.5 0.2 150); }
       </style>
@@ -309,17 +283,24 @@ class WritingApp extends HTMLElement {
 
           <div class="controls">
             ${this.state.message ? `<div class="status-message ${this.state.message.includes('Error') ? 'error' : 'success'}">${this.state.message}</div>` : ''}
-            <button type="submit" ${this.state.isSubmitting ? 'disabled' : ''}>
-              ${this.state.isSubmitting ? 'Submitting...' : 'Submit Work'}
-            </button>
+            <div class="button-group">
+              <button type="submit" id="submitBtn" ${this.state.isSubmitting ? 'disabled' : ''}>
+                ${this.state.isSubmitting ? 'Submitting...' : 'Submit Work (Email)'}
+              </button>
+              <button type="button" id="wordBtn" class="secondary" ${this.state.isSubmitting ? 'disabled' : ''}>
+                Submit as Word (.docx)
+              </button>
+            </div>
           </div>
         </form>
       </div>
     `;
 
-    // Re-attach listeners because innerHTML wipes them
     const form = this.shadowRoot.getElementById('writingForm');
     form.addEventListener('submit', (e) => this.handleSubmit(e));
+
+    const wordBtn = this.shadowRoot.getElementById('wordBtn');
+    wordBtn.addEventListener('click', () => this.handleWordSubmit());
 
     ['firstName', 'lastName', 'testNumber', 'content'].forEach(id => {
       const el = this.shadowRoot.getElementById(id);

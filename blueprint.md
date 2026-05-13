@@ -21,3 +21,16 @@ A web-based writing practice application designed for students in Sydney, Austra
 3. **Develop the Writing Component (`main.js`):** (Completed) Implement the `WritingApp` class with persistence and submission logic.
 4. **Style the Application (`style.css`):** (Completed) Create the "Sydney Education" themed UI with virtual A4 pages.
 5. **Verification & Testing:** (Completed) Validated auto-save, navigation guards, and responsive layout.
+
+## New Feature: Word Attachment Submission (via Google Apps Script)
+- **Objective:** Send the essay as a `.docx` attachment for free using Google Apps Script (GAS).
+- **Workflow:**
+    1. **Data Source:** Retrieve essay data from `localStorage` (`penrithekc_writing_data`).
+    2. **Document Creation:** Use `docx.js` (v8+) to generate a styled Word document in the browser.
+    3. **Encoding:** Convert the `.docx` Blob to a Base64 string using `FileReader`.
+    4. **Transmission:** POST the Base64 data and metadata to a GAS Web App URL.
+    5. **Server Logic (GAS):** Decode Base64 and send email via `MailApp.sendEmail` to `penrithekc@gmail.com`.
+- **Implementation Details:**
+    - `send.html`: A clean UI to show the generation and sending progress.
+    - `main.js`: Add a "Submit as Word File" button that links to `send.html`.
+    - Assets: Use CDN for `docx.js`.
