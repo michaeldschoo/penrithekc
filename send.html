@@ -8,16 +8,11 @@
     <script src="https://cdn.jsdelivr.net/npm/docx@8.2.2/build/index.js"></script>
     <script>
         window.addEventListener('load', () => {
-            console.log('--- Scanning window for docx library ---');
-            // Try to find the docx object if it's not under window.docx
-            let docxLib = null;
-            Object.keys(window).forEach(key => {
-                if (window[key] && typeof window[key] === 'object' && ('Document' in window[key] || 'Packer' in window[key])) {
-                    console.log('Found docx-like object at window.' + key);
-                    docxLib = window[key];
-                }
-            });
-            window.docx = docxLib || window.docx;
+            console.log('--- Checking for docx globally ---');
+            console.log('Is window.docx defined?', window.docx);
+            
+            // docx.js는 보통 window.docx 또는 전역 docx를 노출함.
+            // 하지만 번들 구조에 따라 다를 수 있음.
         });
     </script>
     <style>
