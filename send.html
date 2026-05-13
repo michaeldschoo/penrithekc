@@ -6,10 +6,6 @@
     <title>Sending Essay as Word - Penrithekc</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/docx@8.2.2/build/index.js"></script>
-    <script>
-        // Ensure docx is available even if loaded via different CDN patterns
-        window.docx = window.docx || {};
-    </script>
     <style>
         body {
             background: oklch(0.98 0.01 250);
@@ -108,44 +104,49 @@
                 }
 
                 // 1. Generate Word Document using docx.js
-                const doc = new docx.Document({
+                // In browser bundle, classes are under window.docx
+                const { Document, Paragraph, TextRun, AlignmentType, Packer } = window.docx;
+
+                const paragraphs = data.content.split('\n').map(line => {
+                    return new Paragraph({
+                        children: [new TextRun({ text: line })],
+                        spacing: { line: 480 },
+                    });
+                });
+
+                const doc = new Document({
                     sections: [{
                         properties: {},
                         children: [
-                            new docx.Paragraph({
+                            new Paragraph({
                                 children: [
-                                    new docx.TextRun({ text: "Writing Practice Submission", bold: true, size: 32 }),
+                                    new TextRun({ text: "Writing Practice Submission", bold: true, size: 32 }),
                                 ],
                                 spacing: { after: 400 },
-                                alignment: docx.AlignmentType.CENTER,
+                                alignment: AlignmentType.CENTER,
                             }),
-                            new docx.Paragraph({
+                            new Paragraph({
                                 children: [
-                                    new docx.TextRun({ text: `Student Name: ${data.firstName} ${data.lastName}`, bold: true }),
+                                    new TextRun({ text: `Student Name: ${data.firstName} ${data.lastName}`, bold: true }),
                                 ],
                             }),
-                            new docx.Paragraph({
+                            new Paragraph({
                                 children: [
-                                    new docx.TextRun({ text: `Test Number: #${data.testNumber}`, bold: true }),
+                                    new TextRun({ text: `Test Number: #${data.testNumber}`, bold: true }),
                                 ],
                             }),
-                            new docx.Paragraph({
+                            new Paragraph({
                                 children: [
-                                    new docx.TextRun({ text: `Date: ${new Date().toLocaleDateString()}`, bold: true }),
+                                    new TextRun({ text: `Date: ${new Date().toLocaleDateString()}`, bold: true }),
                                 ],
                                 spacing: { after: 600 },
                             }),
-                            new docx.Paragraph({
-                                children: [
-                                    new docx.TextRun({ text: data.content }),
-                                ],
-                                spacing: { line: 480 }, // Double spacing equivalent
-                            }),
+                            ...paragraphs
                         ],
                     }],
                 });
 
-                const blob = await docx.Packer.toBlob(doc);
+                const blob = await Packer.toBlob(doc);
 
                 // 2. Convert Blob to Base64
                 const base64 = await blobToBase64(blob);
