@@ -5,7 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sending Essay as Word - Penrithekc</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.2.2/docx.js"></script>
+    <script src="https://unpkg.com/docx@8.2.2/build/index.js"></script>
+    <script>
+        // Ensure docx is available even if loaded via different CDN patterns
+        window.docx = window.docx || {};
+    </script>
     <style>
         body {
             background: oklch(0.98 0.01 250);
