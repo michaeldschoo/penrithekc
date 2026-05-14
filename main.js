@@ -119,7 +119,12 @@ class WritingApp extends HTMLElement {
           message: 'Success! Your essay has been sent and a Google Doc has been created.'
         };
         this.render();
-        setTimeout(() => { window.close(); }, 3000);
+        
+        // Auto-clear message and close or reset
+        setTimeout(() => {
+          this.updateState('message', '');
+          // window.close() is optional; let's just clear the message for better UX
+        }, 5000);
       } else {
         throw new Error('Web3Forms submission failed');
       }
