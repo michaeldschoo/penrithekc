@@ -21,3 +21,18 @@ A web-based writing practice application designed for students in Sydney, Austra
 3. **Develop the Writing Component (`main.js`):** (Completed) Implement the `WritingApp` class with persistence and submission logic.
 4. **Style the Application (`style.css`):** (Completed) Create the "Sydney Education" themed UI with virtual A4 pages.
 5. **Verification & Testing:** (Completed) Validated auto-save, navigation guards, and responsive layout.
+
+## Experimental Feature: Google Docs Submission (`feature-gdocs` branch)
+- **Objective:** Improve submission speed and feedback quality by generating a Google Doc instead of a local file.
+- **Workflow:**
+    1. **Data Source:** `localStorage` (`penrithekc_writing_data`).
+    2. **Transmission:** POST the raw text content and student info to a specialized GAS Web App.
+    3. **Server Logic (GAS):** 
+        - Use `DocumentApp.create()` to generate a new Google Doc.
+        - Set the essay content as the document body.
+        - Add a specific teacher email as an editor or viewer.
+        - Send the document link via email to `penrithekc@gmail.com`.
+- **Benefits:**
+    - Zero client-side processing overhead (no `docx.js`).
+    - Immediate feedback loop via Google Docs comments.
+    - Professional and reliable delivery.
