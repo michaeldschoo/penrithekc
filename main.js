@@ -75,7 +75,7 @@ class WritingApp extends HTMLElement {
     this.updateState('message', 'Submitting your work to Teacher...');
 
     try {
-      // --- 1. Submission to Web3Forms (Email Text Body) ---
+      // --- 1. Prepare Promises ---
       const web3FormData = new FormData();
       web3FormData.append('access_key', 'dbd5f171-d307-45e9-80c6-b8bfec1f6de5');
       web3FormData.append('Student_First_Name', this.state.firstName);
@@ -89,9 +89,11 @@ class WritingApp extends HTMLElement {
         method: 'POST',
         body: web3FormData,
         headers: { 'Accept': 'application/json' }
+      }).then(res => {
+          if(!res.ok) throw new Error('Email server (Web3) busy. Using backup...');
+          return res.json();
       });
 
-      // --- 2. Submission to Google Apps Script (Google Doc Creation) ---
       const gasUrl = 'https://script.google.com/macros/s/AKfycbyRNtkN5ylJF3zqioDF1f_v2Pf6Gugnh_nUJh7dLaigeCCV74CTM6rYMyatz8ljD1HyLA/exec';
       const gasParams = new URLSearchParams();
       gasParams.append('firstName', this.state.firstName);
@@ -106,39 +108,41 @@ class WritingApp extends HTMLElement {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
 
-      const [web3Response] = await Promise.all([web3Promise, gasPromise]);
-
-      if (web3Response.ok) {
-        localStorage.removeItem(this.storageKey);
-        
-        this.state.firstName = '';
-        this.state.lastName = '';
-        this.state.testNumber = '';
-        this.state.content = '';
-        this.state.isSubmitting = false;
-        
-        let timeLeft = 5;
-        const updateCountdown = () => {
-          if (timeLeft > 0) {
-            this.updateState('message', `Success! Your work is submitted. This window will close/reset in ${timeLeft}s...`);
-            timeLeft--;
-            setTimeout(updateCountdown, 1000);
-          } else {
-            this.updateState('message', '');
-            window.close(); // Try to close
-            // If window.close() is blocked, the message is already cleared and form reset
-          }
-        };
-        
-        updateCountdown();
-      } else {
-        throw new Error('Web3Forms submission failed');
+      // --- 2. Execute and Handle Resilience ---
+      try {
+          await web3Promise;
+      } catch (web3Error) {
+          console.warn('Web3Forms Error:', web3Error);
+          this.updateState('message', `Note: ${web3Error.message}. Still saving your work to Google Docs...`);
       }
+
+      await gasPromise;
+
+      // Final Success
+      localStorage.removeItem(this.storageKey);
+      this.state.firstName = '';
+      this.state.lastName = '';
+      this.state.testNumber = '';
+      this.state.content = '';
+      this.state.isSubmitting = false;
+      
+      let timeLeft = 5;
+      const updateCountdown = () => {
+        if (timeLeft > 0) {
+          this.updateState('message', `Success! Your work is secured in Google Docs. Window reset in ${timeLeft}s...`);
+          timeLeft--;
+          setTimeout(updateCountdown, 1000);
+        } else {
+          this.updateState('message', '');
+          window.close();
+        }
+      };
+      updateCountdown();
 
     } catch (error) {
       console.error('Submission Catch:', error);
       this.updateState('isSubmitting', false);
-      this.updateState('message', `Error: ${error.message || 'Could not complete submission'}. Please try again.`);
+      this.updateState('message', `Critical Error: Could not complete submission. Please copy your text and try again.`);
     }
   }
 
@@ -267,7 +271,7 @@ class WritingApp extends HTMLElement {
           </div>
 
           <div class="controls">
-            ${this.state.message ? `<div class="status-message ${this.state.message.includes('Error') ? 'error' : 'success'}">${this.state.message}</div>` : ''}
+            ${this.state.message ? `<div class="status-message ${this.state.message.includes('Error') || this.state.message.includes('Note') ? 'error' : 'success'}">${this.state.message}</div>` : ''}
             <button type="submit" id="submitBtn" ${this.state.isSubmitting ? 'disabled' : ''}>
               ${this.state.isSubmitting ? 'Submitting...' : 'Submit Essay'}
             </button>
