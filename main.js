@@ -72,53 +72,63 @@ class WritingApp extends HTMLElement {
     }
 
     this.updateState('isSubmitting', true);
-    this.updateState('message', 'Sending your work...');
+    this.updateState('message', 'Submitting your work to Teacher...');
 
     try {
-      const formData = new FormData();
-      formData.append('access_key', 'dbd5f171-d307-45e9-80c6-b8bfec1f6de5');
-      formData.append('Student_First_Name', this.state.firstName);
-      formData.append('Student_Last_Name', this.state.lastName);
-      formData.append('Test_Number', this.state.testNumber);
-      formData.append('Essay_Content', this.state.content);
-      formData.append('subject', `Writing Submission: ${this.state.firstName} ${this.state.lastName} - #${this.state.testNumber}`);
-      formData.append('from_name', 'Penrithekc Writing App');
+      // --- 1. Submission to Web3Forms (Email Text Body) ---
+      const web3FormData = new FormData();
+      web3FormData.append('access_key', 'dbd5f171-d307-45e9-80c6-b8bfec1f6de5');
+      web3FormData.append('Student_First_Name', this.state.firstName);
+      web3FormData.append('Student_Last_Name', this.state.lastName);
+      web3FormData.append('Test_Number', this.state.testNumber);
+      web3FormData.append('Essay_Content', this.state.content);
+      web3FormData.append('subject', `Writing Submission: ${this.state.firstName} ${this.state.lastName} - #${this.state.testNumber}`);
+      web3FormData.append('from_name', 'Penrithekc Writing App');
 
-      const response = await fetch('https://api.web3forms.com/submit', {
+      const web3Promise = fetch('https://api.web3forms.com/submit', {
         method: 'POST',
-        body: formData,
-        headers: {
-          'Accept': 'application/json'
-        }
+        body: web3FormData,
+        headers: { 'Accept': 'application/json' }
       });
 
-      const data = await response.json();
+      // --- 2. Submission to Google Apps Script (Google Doc Creation) ---
+      // We use a separate FormData/URLSearchParams for GAS to handle e.parameter correctly
+      const gasUrl = 'https://script.google.com/macros/s/AKfycbyRNtkN5ylJF3zqioDF1f_v2Pf6Gugnh_nUJh7dLaigeCCV74CTM6rYMyatz8ljD1HyLA/exec';
+      const gasParams = new URLSearchParams();
+      gasParams.append('firstName', this.state.firstName);
+      gasParams.append('lastName', this.state.lastName);
+      gasParams.append('testNumber', this.state.testNumber);
+      gasParams.append('content', this.state.content);
 
-      if (response.ok) {
+      // mode: 'no-cors' allows us to send data without GAS needing to handle preflight/CORS complexly
+      const gasPromise = fetch(gasUrl, {
+        method: 'POST',
+        mode: 'no-cors', 
+        body: gasParams,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
+
+      // Wait for both (or at least the Web3Forms one which gives feedback)
+      const [web3Response] = await Promise.all([web3Promise, gasPromise]);
+
+      if (web3Response.ok) {
         localStorage.removeItem(this.storageKey);
         this.state = {
           firstName: '', lastName: '', testNumber: '', content: '',
           isSubmitting: false,
-          message: 'Success! Your work has been submitted. The form has been reset.'
+          message: 'Success! Your essay has been sent and a Google Doc has been created.'
         };
         this.render();
         setTimeout(() => { window.close(); }, 3000);
       } else {
-        throw new Error(data.message || 'Submission failed');
+        throw new Error('Web3Forms submission failed');
       }
-    } catch (error) {
-      this.updateState('isSubmitting', false);
-      this.updateState('message', `Error: ${error.message || 'Could not send email'}. Please try again.`);
-    }
-  }
 
-  handleGDocSubmit() {
-    if (!this.state.firstName || !this.state.lastName || !this.state.testNumber || !this.state.content) {
-      this.updateState('message', 'Please fill in all fields before submitting.');
-      return;
+    } catch (error) {
+      console.error('Submission Catch:', error);
+      this.updateState('isSubmitting', false);
+      this.updateState('message', `Error: ${error.message || 'Could not complete submission'}. Please try again.`);
     }
-    this.saveData();
-    window.location.href = 'send.html';
   }
 
   render() {
@@ -200,27 +210,17 @@ class WritingApp extends HTMLElement {
           align-items: center;
           gap: 1.5rem;
         }
-        .button-group {
-          display: flex;
-          gap: 1rem;
-          flex-wrap: wrap;
-          justify-content: center;
-        }
         button {
           background: oklch(0.6 0.2 250);
           color: white;
           border: none;
-          padding: 1rem 2rem;
-          font-size: 1.1rem;
+          padding: 1.2rem 4rem;
+          font-size: 1.2rem;
           font-weight: 700;
           border-radius: 50px;
           cursor: pointer;
           transition: all 0.2s;
           box-shadow: 0 4px 15px oklch(0.6 0.2 250 / 0.4);
-        }
-        button.secondary {
-          background: oklch(0.4 0.1 250);
-          box-shadow: 0 4px 15px oklch(0.4 0.1 250 / 0.4);
         }
         button:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); }
         button:disabled { background: oklch(0.8 0.02 250); cursor: not-allowed; box-shadow: none; }
@@ -232,7 +232,7 @@ class WritingApp extends HTMLElement {
       <div class="container">
         <header>
           <h1>Writing Practice</h1>
-          <p>Complete your essay below. Your progress is automatically saved.</p>
+          <p>Submit your essay. It will be sent via email and saved as a Google Doc for feedback.</p>
         </header>
 
         <form id="writingForm">
@@ -257,14 +257,9 @@ class WritingApp extends HTMLElement {
 
           <div class="controls">
             ${this.state.message ? `<div class="status-message ${this.state.message.includes('Error') ? 'error' : 'success'}">${this.state.message}</div>` : ''}
-            <div class="button-group">
-              <button type="submit" id="submitBtn" ${this.state.isSubmitting ? 'disabled' : ''}>
-                ${this.state.isSubmitting ? 'Submitting...' : 'Quick Submit (Email)'}
-              </button>
-              <button type="button" id="gdocBtn" class="secondary" ${this.state.isSubmitting ? 'disabled' : ''}>
-                Submit as Google Doc
-              </button>
-            </div>
+            <button type="submit" id="submitBtn" ${this.state.isSubmitting ? 'disabled' : ''}>
+              ${this.state.isSubmitting ? 'Submitting...' : 'Submit Essay'}
+            </button>
           </div>
         </form>
       </div>
@@ -272,9 +267,6 @@ class WritingApp extends HTMLElement {
 
     const form = this.shadowRoot.getElementById('writingForm');
     form.addEventListener('submit', (e) => this.handleSubmit(e));
-
-    const gdocBtn = this.shadowRoot.getElementById('gdocBtn');
-    gdocBtn.addEventListener('click', () => this.handleGDocSubmit());
 
     ['firstName', 'lastName', 'testNumber', 'content'].forEach(id => {
       const el = this.shadowRoot.getElementById(id);
