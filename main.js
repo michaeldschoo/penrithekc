@@ -92,7 +92,6 @@ class WritingApp extends HTMLElement {
       });
 
       // --- 2. Submission to Google Apps Script (Google Doc Creation) ---
-      // We use a separate FormData/URLSearchParams for GAS to handle e.parameter correctly
       const gasUrl = 'https://script.google.com/macros/s/AKfycbyRNtkN5ylJF3zqioDF1f_v2Pf6Gugnh_nUJh7dLaigeCCV74CTM6rYMyatz8ljD1HyLA/exec';
       const gasParams = new URLSearchParams();
       gasParams.append('firstName', this.state.firstName);
@@ -100,7 +99,6 @@ class WritingApp extends HTMLElement {
       gasParams.append('testNumber', this.state.testNumber);
       gasParams.append('content', this.state.content);
 
-      // mode: 'no-cors' allows us to send data without GAS needing to handle preflight/CORS complexly
       const gasPromise = fetch(gasUrl, {
         method: 'POST',
         mode: 'no-cors', 
@@ -108,23 +106,31 @@ class WritingApp extends HTMLElement {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       });
 
-      // Wait for both (or at least the Web3Forms one which gives feedback)
       const [web3Response] = await Promise.all([web3Promise, gasPromise]);
 
       if (web3Response.ok) {
         localStorage.removeItem(this.storageKey);
-        this.state = {
-          firstName: '', lastName: '', testNumber: '', content: '',
-          isSubmitting: false,
-          message: 'Success! Your essay has been sent and a Google Doc has been created.'
-        };
-        this.render();
         
-        // Auto-clear message and close or reset
-        setTimeout(() => {
-          this.updateState('message', '');
-          // window.close() is optional; let's just clear the message for better UX
-        }, 5000);
+        this.state.firstName = '';
+        this.state.lastName = '';
+        this.state.testNumber = '';
+        this.state.content = '';
+        this.state.isSubmitting = false;
+        
+        let timeLeft = 5;
+        const updateCountdown = () => {
+          if (timeLeft > 0) {
+            this.updateState('message', `Success! Your work is submitted. This window will close/reset in ${timeLeft}s...`);
+            timeLeft--;
+            setTimeout(updateCountdown, 1000);
+          } else {
+            this.updateState('message', '');
+            window.close(); // Try to close
+            // If window.close() is blocked, the message is already cleared and form reset
+          }
+        };
+        
+        updateCountdown();
       } else {
         throw new Error('Web3Forms submission failed');
       }
